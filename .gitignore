@@ -30,3 +30,6 @@
 *.exe
 *.out
 *.app
+/.vs/MCF
+/x64/Debug/MCF.pdb
+/MCF/x64/Debug
