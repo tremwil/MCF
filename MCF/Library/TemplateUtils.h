@@ -18,7 +18,7 @@ namespace MCF
         template<> struct hash<type> {\
             std::size_t operator()(const type &t) const {\
                 std::size_t ret = 0;\
-                hash_combine(ret, __VA_ARGS__);\
+                MCF::hash_combine(ret, __VA_ARGS__);\
                 return ret;\
             }\
         };\

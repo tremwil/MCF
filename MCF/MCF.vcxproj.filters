@@ -27,7 +27,16 @@
     <ClInclude Include="Library\TemplateUtils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Library\IAOBScanMgr.h">
+    <ClInclude Include="Library\AobScanMgr.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Utils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\EventMgr.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Singleton.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -1,8 +1,8 @@
 #pragma once
+#include "SharedInterface.h"
 
 namespace MCF
 {
-	template<typename TMod>
 	class Mod
 	{
 

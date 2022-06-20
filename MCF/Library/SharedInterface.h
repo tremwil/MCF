@@ -23,12 +23,49 @@ namespace MCF
 		/// </summary>
 		const uint32_t version = 0;
 
-		bool operator==(const SIMetadata& lhs, const SIMetadata& rhs)
+		bool operator==(const SIMetadata& other)
 		{
-			return lhs.name == rhs.name && lhs.version == rhs.version;
+			return name == other.name && version == other.version;
 		}
 	};
 
+	class SharedInterfaceBase
+	{
+	public:
+		virtual const char* Name() const = 0;
+		virtual int Version() const = 0;
+
+		/// <summary>
+		/// Return a pointer to a list of other SharedInterfaces on which this one depends. 
+		/// While this can be overriden directly, it is preferable to use the SIDependencies template.
+		/// </summary>
+		/// <param name="num">Pointer to an integer variable which will receive the numbers of dependencies.</param>
+		/// <returns>A pointer to a static array for SIMetadata structs identifying each dependency.</returns>
+		virtual const SIMetadata* Dependencies(size_t* num) const = 0;
+
+		/// <summary>
+		/// Called when the shared interface is first loaded.
+		/// Guaranteed to be called after all dependencies. 
+		/// May not have to do anything depending on the implementation.
+		/// </summary>
+		/// <returns>True if initiation was sucessful, false otherwise.</returns>
+		virtual bool Init() { };
+
+		/// <summary>
+		/// Virtual destructor, will be called when the shared interface is unloaded.
+		/// </summary>
+		virtual ~SharedInterfaceBase() { };
+	};
+}
+
+#ifdef MCF_EXPORTS
+__declspec(dllexport) MCF::SharedInterfaceBase* MCF_GetInterface(MCF::SIMetadata meta);
+#else
+__declspec(dllimport) MCF::SharedInterfaceBase* MCF_GetInterface(MCF::SIMetadata meta);
+#endif
+
+namespace MCF
+{
 	/// <summary>
 	/// Template class used to define singleton-like virtual method interfaces that are designed
 	/// to be used by different mods. Similar in design to Steam API interfaces.
@@ -37,7 +74,7 @@ namespace MCF
 	/// inherit from TInterface and implement the virtual methods.
 	/// </summary>
 	template<class TInterface>
-	class SharedInterface
+	class SharedInterface : SharedInterfaceBase
 	{
 	public:
 		// Simple shortcut macro to specify shared interface metadata
@@ -55,30 +92,20 @@ namespace MCF
 			return TInterface::si_metadata.version; 
 		}
 
-		/// <summary>
-		/// Return a pointer to a list of other SharedInterfaces on which this one depends. 
-		/// While this can be overriden directly, it is preferable to use the SIDependencies template.
-		/// </summary>
-		/// <param name="num">Pointer to an integer variable which will receive the numbers of dependencies.</param>
-		/// <returns>A pointer to a static array for SIMetadata structs identifying each dependency.</returns>
-		virtual const SIMetadata* Dependencies(size_t* num)
+		virtual const SIMetadata* Dependencies(size_t* num) const
 		{
 			*num = 0;
 			return nullptr;
 		}
 
-		/// <summary>
-		/// Called when the shared interface is first loaded.
-		/// Guaranteed to be called after all dependencies. 
-		/// May not have to do anything depending on the implementation.
-		/// </summary>
-		/// <returns>True if initiation was sucessful, false otherwise.</returns>
 		virtual bool Init() { };
 
-		/// <summary>
-		/// Virtual destructor, will be called when the shared interface is unloaded.
-		/// </summary>
 		virtual ~SharedInterface() { };
+
+		static inline TInterface* Ins()
+		{
+			return (TInterface*)MCF_GetInterface(TInterface::si_metadata);
+		}
 	};
 
 	/// <summary>
@@ -88,7 +115,7 @@ namespace MCF
 	class SIDependencies
 	{
 	public:
-		virtual const SIMetadata* Dependencies(size_t& num)
+		virtual const SIMetadata* Dependencies(size_t* num) const
 		{
 			static const SIMetadata deps[] = { Deps::si_metadata... };
 			*num = sizeof(deps) / sizeof(SIMetadata);

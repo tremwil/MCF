@@ -152,10 +152,13 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="common.h" />
-    <ClInclude Include="Library\IAOBScanMgr.h" />
+    <ClInclude Include="Library\AobScanMgr.h" />
+    <ClInclude Include="Library\EventMgr.h" />
     <ClInclude Include="Library\Mod.h" />
     <ClInclude Include="Library\SharedInterface.h" />
+    <ClInclude Include="Library\Singleton.h" />
     <ClInclude Include="Library\TemplateUtils.h" />
+    <ClInclude Include="Library\Utils.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp" />
