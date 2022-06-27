@@ -1,39 +1,12 @@
 #pragma once
-#include <type_traits>
 #include "TemplateUtils.h"
 
 namespace MCF
 {
-	/// <summary>
-	/// Metadata for SharedInterfaces. If two mods share such a structure, the shared interface manager
-	/// will issue a warning but assume both are the same and only load one (to account for mod makers 
-	/// copying implementations in their project). 
-	/// </summary>
-	struct SIMetadata
-	{
-		/// <summary>
-		/// Name of the shared interface. Should be unique to avoid conflicts with other mods. 
-		/// Prepending your mod name to the interface name is a good idea to avoid conflicts.
-		/// </summary>
-		const char* name = nullptr;
-
-		/// <summary>
-		/// Version of the interface. Should only be updated when the layout of the virtual
-		/// functions in the interface changes. 
-		/// </summary>
-		const uint32_t version = 0;
-
-		bool operator==(const SIMetadata& other)
-		{
-			return name == other.name && version == other.version;
-		}
-	};
-
 	class SharedInterfaceBase
 	{
 	public:
-		virtual const char* Name() const = 0;
-		virtual int Version() const = 0;
+		virtual const char* VersionString() const = 0;
 
 		/// <summary>
 		/// Return a pointer to a list of other SharedInterfaces on which this one depends. 
@@ -41,27 +14,29 @@ namespace MCF
 		/// </summary>
 		/// <param name="num">Pointer to an integer variable which will receive the numbers of dependencies.</param>
 		/// <returns>A pointer to a static array for SIMetadata structs identifying each dependency.</returns>
-		virtual const SIMetadata* Dependencies(size_t* num) const = 0;
+		virtual const char** Dependencies(size_t* num) const = 0;
 
 		/// <summary>
-		/// Called when the shared interface is first loaded.
-		/// Guaranteed to be called after all dependencies. 
-		/// May not have to do anything depending on the implementation.
+		/// Returns true if this shared interface can be unloaded. False by default.
+		/// Override this if you wish to add support for disabling your mod at runtime.
 		/// </summary>
-		/// <returns>True if initiation was sucessful, false otherwise.</returns>
-		virtual bool Init() { };
+		/// <returns></returns>
+		virtual bool IsUnloadable() const = 0;
+
+	protected:
+		friend class SharedInterfaceMan;
 
 		/// <summary>
-		/// Virtual destructor, will be called when the shared interface is unloaded.
+		/// Virtual destructor. Override to free any dynamically allocated resources.
 		/// </summary>
-		virtual ~SharedInterfaceBase() { };
+		virtual ~SharedInterfaceBase() = default;
 	};
 }
 
 #ifdef MCF_EXPORTS
-__declspec(dllexport) MCF::SharedInterfaceBase* MCF_GetInterface(MCF::SIMetadata meta);
+extern "C" __declspec(dllexport) MCF::SharedInterfaceBase * MCF_GetInterface(const char* version_string);
 #else
-__declspec(dllimport) MCF::SharedInterfaceBase* MCF_GetInterface(MCF::SIMetadata meta);
+extern "C" __declspec(dllimport) MCF::SharedInterfaceBase * MCF_GetInterface(const char* version_string);
 #endif
 
 namespace MCF
@@ -73,56 +48,49 @@ namespace MCF
 	/// header should be made available for other mods to use. The actual implementation should
 	/// inherit from TInterface and implement the virtual methods.
 	/// </summary>
-	template<class TInterface>
-	class SharedInterface : SharedInterfaceBase
+	template<class TInterface, FixedString version_str, typename... Deps>
+	class SharedInterface : public SharedInterfaceBase
 	{
 	public:
-		// Simple shortcut macro to specify shared interface metadata
-		#define SIMeta(name, version) static constexpr const SIMetadata si_metadata = { (name), (version) }
-		SIMeta(nullptr, 0);
+		static constexpr const char* version_string = version_str;
 
-		virtual const char* Name() const 
+		virtual const char* VersionString() const override
 		{
-			static_assert(TInterface::si_metadata.name != nullptr && TInterface::si_metadata.version != 0, "Invalid/unspecified shared interface metadata");
-			return TInterface::si_metadata.name; 
-		}
-		
-		virtual int Version() const 
-		{
-			return TInterface::si_metadata.version; 
+			return version_string; 
 		}
 
-		virtual const SIMetadata* Dependencies(size_t* num) const
+		virtual bool IsUnloadable() const override
 		{
-			*num = 0;
-			return nullptr;
+			return false;
 		}
 
-		virtual bool Init() { };
-
-		virtual ~SharedInterface() { };
-
-		static inline TInterface* Ins()
+		virtual const char** Dependencies(size_t* num) const override
 		{
-			return (TInterface*)MCF_GetInterface(TInterface::si_metadata);
+			return StaticDependencies(num);
 		}
-	};
 
-	/// <summary>
-	/// Helper template to overwrite the virtual Dependencies() function with less boilerplate
-	/// </summary>
-	template<typename... Deps>
-	class SIDependencies
-	{
-	public:
-		virtual const SIMetadata* Dependencies(size_t* num) const
+		static const char** StaticDependencies(size_t* num)
 		{
-			static const SIMetadata deps[] = { Deps::si_metadata... };
-			*num = sizeof(deps) / sizeof(SIMetadata);
-			return deps;
+			if constexpr ((sizeof...(Deps)) > 0)
+			{
+				static const char* deps[] = { Deps::version_string... };
+				*num = sizeof(deps) / sizeof(char*);
+				return deps;
+			}
+			else
+			{
+				*num = 0;
+				return nullptr;
+			}
+		}
+
+		/// <summary>
+		/// Get a pointer to an instance of this interface, or NULL if it has not been instantiated yet. 
+		/// </summary>
+		/// <returns></returns>
+		static inline TInterface* Get()
+		{
+			return (TInterface*)MCF_GetInterface(version_string);
 		}
 	};
 }
-
-// Make SIMetadata a hashable type that can be used as a hashmap key
-MAKE_HASHABLE(MCF::SIMetadata, t.name, t.version);

@@ -1,6 +1,7 @@
 #pragma once
 #include "SharedInterface.h"
-#include "EventMgr.h"
+#include "EventMan.h"
+#include "SharedInterfaceMan.h"
 #include <common.h>
 #include <winnt.h>
 #include "Utils.h"
@@ -31,33 +32,20 @@ namespace MCF
 		}
 	};
 
-	struct AobScanCompleteEvent
-	{
-		/// <summary>
-		/// Object under which the AOB was 
-		/// </summary>
-		const void* obj;
-	};
-
 	/// <summary>
 	/// Shared interface allowing the registration of AOBs for future scan, and then querying the results by name.
 	/// </summary>
-	class AobScanMgr : public SharedInterface<AobScanMgr>, SIDependencies<EventMgr>
+	class AobScanMan : public SharedInterface<AobScanMan, "MCF_AOB_SCAN_MAN_001", EventMan>
 	{
 	public:
-		SIMeta("Core::AOBScanMgr", 1);
-
-		enum class Events : int
-		{
-			AobScanComplete
-		};
+		struct AobScanCompleteEvent : public Event<"MCF_AOB_SCAN_COMPLETE_EVENT"> { };
 
 		/// <summary>
 		/// Register an AOB to scan in the .text section of the main module with an object instance. 
 		/// Will set out_result (if not null) to the result of the scan and dispatch an AobScanComplete event when
 		/// all AOBs registered under the "obj" object have been found
 		/// </summary>
-		virtual AobHandle RegisterAob(const AobChar* aob, int length, const void* obj = nullptr, uintptr_t* out_result = nullptr, ModuleFilter module_filter = nullptr, SectionFilter section_filter = nullptr) = 0;
+		virtual AobHandle RegisterAob(const AobChar* aob, size_t length, const void* obj = nullptr, uintptr_t* out_result = nullptr, ModuleFilter module_filter = nullptr, SectionFilter section_filter = nullptr) = 0;
 
 		/// <summary>
 		/// Unregister an AOB by handle.
@@ -109,7 +97,7 @@ namespace MCF
 		/// Will set out_result (if not null) to the result of the scan and dispatch an AobScanComplete event when
 		/// all AOBs registered under the "obj" object have been found
 		/// </summary>
-		AobHandle RegisterAob(const char* ce_aob_string, int length, const void* obj = nullptr, uintptr_t* out_result = nullptr, ModuleFilter module_filter = nullptr, SectionFilter section_filter = nullptr)
+		AobHandle RegisterAob(const char* ce_aob_string, const void* obj = nullptr, uintptr_t* out_result = nullptr, ModuleFilter module_filter = nullptr, SectionFilter section_filter = nullptr)
 		{
 			std::vector<AobChar> aob = ConvertAobString(ce_aob_string);
 			RegisterAob(aob.data(), aob.size(), obj, out_result, module_filter, section_filter);

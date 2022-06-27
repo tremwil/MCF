@@ -26,10 +26,16 @@
 *.a
 *.lib
 
+*.pdb
+/Debug
+/Release
+/*/Debug
+/*/x64/Debug
+/x64/Debug
+/x64/Release
+
 # Executables
 *.exe
 *.out
 *.app
-/.vs/MCF
-/x64/Debug/MCF.pdb
-/MCF/x64/Debug
+/.vs/
