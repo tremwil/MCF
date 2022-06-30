@@ -4,7 +4,7 @@
 //#include "ThirdParty/Kiero/kiero.h"
 //#include "imgui.h"
 //#include "backends/imgui_impl_dx12.h"
-#include "Core/SharedInterfaceManImp.h"
+#include "Implementation/SharedInterfaceManImp.h"
 
 DWORD testThread(LPVOID lParam)
 {

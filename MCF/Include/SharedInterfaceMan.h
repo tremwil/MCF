@@ -4,9 +4,9 @@
 namespace MCF
 {
 	/// <summary>
-	/// The shared interface manager. Responsible for loading, 
+	/// The shared interface manager. Responsible for loading/unloading interfaces provided by different DLLs.
 	/// </summary>
-	class SharedInterfaceMan : public SharedInterface<SharedInterfaceMan, "MCF_SHARED_INTERFACE_MAN_001", EventMan>
+	class SharedInterfaceMan : public SharedInterface<SharedInterfaceMan, "MCF_SHARED_INTERFACE_MAN_001">
 	{
 	public:
 		/// <summary>

@@ -18,34 +18,34 @@
     <ClInclude Include="common.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Library\SharedInterface.h">
+    <ClInclude Include="Include\SharedInterface.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Mod.h">
+    <ClInclude Include="Include\Mod.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Library\TemplateUtils.h">
+    <ClInclude Include="Include\TemplateUtils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Library\AobScanMan.h">
+    <ClInclude Include="Include\AobScanMan.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Utils.h">
+    <ClInclude Include="Include\Utils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Library\EventMan.h">
+    <ClInclude Include="Include\EventMan.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Library\SharedInterfaceMan.h">
+    <ClInclude Include="Include\SharedInterfaceMan.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Core\SharedInterfaceManImp.h">
+    <ClInclude Include="Implementation\SharedInterfaceManImp.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Hooking\IATHookMan.h">
+    <ClInclude Include="Include\Hooking\IATHookMan.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Hooking\HookManBase.h">
+    <ClInclude Include="Include\Hooking\HookManBase.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="ThirdParty\Kiero\kiero.h">
@@ -84,7 +84,10 @@
     <ClInclude Include="ThirdParty\ImGui\imstb_textedit.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Library\InterfaceExport.h">
+    <ClInclude Include="Include\InterfaceExport.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Implementation\EventManImp.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -92,7 +95,7 @@
     <ClCompile Include="dllmain.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Core\SharedInterfaceManImp.cpp">
+    <ClCompile Include="Implementation\SharedInterfaceManImp.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="ThirdParty\Kiero\kiero.cpp">
@@ -131,7 +134,10 @@
     <ClCompile Include="ThirdParty\ImGui\misc\fonts\binary_to_compressed_c.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Library\InterfaceExport.cpp">
+    <ClCompile Include="Include\InterfaceExport.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Implementation\EventManImp.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

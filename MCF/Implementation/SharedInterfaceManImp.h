@@ -1,10 +1,10 @@
 #pragma once
-#include "Library/SharedInterfaceMan.h"
-#include "Library/InterfaceExport.h"
+#include "Include/SharedInterfaceMan.h"
+#include "Include/InterfaceExport.h"
 
 namespace MCF
 {
-	class SharedInterfaceManImp final : public SharedInterfaceMan
+	class SharedInterfaceManImp final : public SharedInterfaceImp<SharedInterfaceMan, SharedInterfaceManImp, DepList<EventMan>, true>
 	{
 	public:
 		SharedInterfaceManImp();
@@ -13,6 +13,8 @@ namespace MCF
 		{
 			printf("Loaded!");
 		};
+
+		virtual bool IsUnloadable() const override { return true; }
 
 		virtual SharedInterfaceBase* GetInterface(const char* version_string) const override;
 	};
