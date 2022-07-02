@@ -2,7 +2,6 @@
 
 namespace MCF
 {
-
 	void EventManImp::RegisterCallback(EventCallbackBase* callback)
 	{
 		std::lock_guard<decltype(cb_mutex)> lock(cb_mutex);

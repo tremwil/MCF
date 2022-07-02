@@ -8,13 +8,13 @@ namespace MCF
 	class AutoExportBase
 	{
 	protected:
-		static std::vector<const ImpDetails*> metas;
+		static std::vector<const ComponentInfo*> comp_infos;
 
 	public:
-		static const MCF::ImpDetails** Export(size_t* n)
+		static const MCF::ComponentInfo** Export(size_t* n)
 		{
-			*n = AutoExportBase::metas.size();
-			return AutoExportBase::metas.data();
+			*n = AutoExportBase::comp_infos.size();
+			return AutoExportBase::comp_infos.data();
 		}
 	};
 
@@ -27,9 +27,9 @@ namespace MCF
 	private:
 		AutoExport()
 		{
-			const ImpDetails* meta = T::ImpDetailsStatic();
-			printf("%s init!\n", meta->version_string);
-			AutoExportBase::metas.push_back(meta);
+			const ComponentInfo* info = T::ComponentInfoStatic();
+			printf("%s init!\n", info->version_string);
+			AutoExportBase::comp_infos.push_back(info);
 		}
 		static int AddOnce()
 		{
@@ -40,6 +40,6 @@ namespace MCF
 		static int ex;
 	};
 }
-#define MCF_INTERFACE_EXPORT(T) int AutoExport<T>::ex = AutoExport<T>::AddOnce();
+#define MCF_COMPONENT_EXPORT(T) int AutoExport<T>::ex = AutoExport<T>::AddOnce();
 
-extern "C" __declspec(dllexport) const MCF::ImpDetails** MCF_GetExportedInterfacesMeta(size_t* n);
+extern "C" __declspec(dllexport) const MCF::ComponentInfo** MCF_GetExportedInterfaces(size_t* n);

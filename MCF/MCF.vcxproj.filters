@@ -18,7 +18,7 @@
     <ClInclude Include="common.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Include\SharedInterface.h">
+    <ClInclude Include="Include\Component.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Include\Mod.h">
@@ -36,10 +36,10 @@
     <ClInclude Include="Include\EventMan.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Include\SharedInterfaceMan.h">
+    <ClInclude Include="Include\ComponentMan.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Implementation\SharedInterfaceManImp.h">
+    <ClInclude Include="Implementation\ComponentManImp.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Include\Hooking\IATHookMan.h">
@@ -84,10 +84,13 @@
     <ClInclude Include="ThirdParty\ImGui\imstb_textedit.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Include\InterfaceExport.h">
+    <ClInclude Include="Include\Export.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Implementation\EventManImp.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Include\SharedInterface.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -95,7 +98,7 @@
     <ClCompile Include="dllmain.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Implementation\SharedInterfaceManImp.cpp">
+    <ClCompile Include="Implementation\ComponentManImp.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="ThirdParty\Kiero\kiero.cpp">
@@ -134,7 +137,7 @@
     <ClCompile Include="ThirdParty\ImGui\misc\fonts\binary_to_compressed_c.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Include\InterfaceExport.cpp">
+    <ClCompile Include="Include\Export.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Implementation\EventManImp.cpp">

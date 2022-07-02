@@ -4,7 +4,7 @@
 //#include "ThirdParty/Kiero/kiero.h"
 //#include "imgui.h"
 //#include "backends/imgui_impl_dx12.h"
-#include "Implementation/SharedInterfaceManImp.h"
+#include "Implementation/ComponentManImp.h"
 
 DWORD testThread(LPVOID lParam)
 {
@@ -22,15 +22,6 @@ DWORD testThread(LPVOID lParam)
     //if (kiero::init(kiero::RenderType::Auto) != kiero::Status::Success)
     //    return;
 
-    //MCF::Test test1;
-    //MCF::Test test2;
-
-    //int res_1 = test1.t1.Call<int>(1, 2);
-    //int res_2 = test1.t2.Call<int>(1, 2);
-    //int res_3 = test2.t1.Call<int>(2, 4);
-    //int res_4 = test2.t2.Call<int>(2, 4);
-    //printf("%d %d %d %d\n", res_1, res_2, res_3, res_4);
-
     return 0;
 }
 
@@ -41,11 +32,8 @@ BOOL APIENTRY DllMain( HMODULE hModule,
 {
     if (ul_reason_for_call == DLL_PROCESS_ATTACH)
     {
-        //auto f = MCF::SharedInterfaceManImp::force_init;
-        //MCF::AutoExport<MCF::SharedInterfaceManImp>::ForceInit f;
-
         printf("Test thread start\n");
-        //CreateThread(NULL, 0, testThread, hModule, 0, NULL);
+        CreateThread(NULL, 0, testThread, hModule, 0, NULL);
     }
     return TRUE;
 }

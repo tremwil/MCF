@@ -160,12 +160,13 @@
     <ClInclude Include="Include\Hooking\HookManBase.h" />
     <ClInclude Include="Include\Hooking\IATHookMan.h" />
     <ClInclude Include="Include\Mod.h" />
-    <ClInclude Include="Include\InterfaceExport.h" />
+    <ClInclude Include="Include\Export.h" />
+    <ClInclude Include="Include\Component.h" />
     <ClInclude Include="Include\SharedInterface.h" />
-    <ClInclude Include="Include\SharedInterfaceMan.h" />
+    <ClInclude Include="Include\ComponentMan.h" />
     <ClInclude Include="Include\TemplateUtils.h" />
     <ClInclude Include="Include\Utils.h" />
-    <ClInclude Include="Implementation\SharedInterfaceManImp.h" />
+    <ClInclude Include="Implementation\ComponentManImp.h" />
     <ClInclude Include="ThirdParty\ImGui\backends\imgui_impl_dx10.h" />
     <ClInclude Include="ThirdParty\ImGui\backends\imgui_impl_dx11.h" />
     <ClInclude Include="ThirdParty\ImGui\backends\imgui_impl_dx12.h" />
@@ -182,8 +183,8 @@
   <ItemGroup>
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="Implementation\EventManImp.cpp" />
-    <ClCompile Include="Implementation\SharedInterfaceManImp.cpp" />
-    <ClCompile Include="Include\InterfaceExport.cpp" />
+    <ClCompile Include="Implementation\ComponentManImp.cpp" />
+    <ClCompile Include="Include\Export.cpp" />
     <ClCompile Include="ThirdParty\ImGui\backends\imgui_impl_dx10.cpp" />
     <ClCompile Include="ThirdParty\ImGui\backends\imgui_impl_dx11.cpp" />
     <ClCompile Include="ThirdParty\ImGui\backends\imgui_impl_dx12.cpp" />

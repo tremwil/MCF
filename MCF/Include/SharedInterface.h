@@ -1,153 +1,37 @@
 #pragma once
-#include "TemplateUtils.h"
-
-namespace MCF
-{
-	struct ImpDetails;
-
-	class SharedInterfaceBase
-	{
-	public:
-		/// <summary>
-		/// Return a structure containing details about the implementation of this shared interface. 
-		/// </summary>
-		/// <returns></returns>
-		virtual const ImpDetails* ImpDetails() const = 0;
-
-		/// <summary>
-		/// Return the unique version string of this shared interface.
-		/// </summary>
-		virtual const char* VersionString() const = 0;
-
-		/// <summary>
-		/// Return a pointer to a list of version strings of shared interfaces on which this one depends. 
-		/// While this can be overriden directly, it is preferable to inherit from the DependsOn template.
-		/// </summary>
-		/// <param name="num">Pointer to an integer variable which will receive the numbers of dependencies.</param>
-		/// <returns>A pointer to an array of version strings for each dependency.</returns>
-		virtual const char** Dependencies(size_t* num) const = 0;
-
-		/// <summary>
-		/// Returns true if this shared interface can be unloaded. False by default.
-		/// Override this if you wish to add support for disabling your mod at runtime.
-		/// </summary>
-		virtual bool IsUnloadable() const = 0;
-
-	protected:
-		friend class SharedInterfaceManImp;
-
-		/// <summary>
-		/// Virtual destructor. Override to free any dynamically allocated resources.
-		/// </summary>
-		virtual ~SharedInterfaceBase() = default;
-	};
-}
-
-#ifdef MCF_EXPORTS
-extern "C" __declspec(dllexport) MCF::SharedInterfaceBase * MCF_GetInterface(const char* version_string);
-#else
-extern "C" __declspec(dllimport) MCF::SharedInterfaceBase * MCF_GetInterface(const char* version_string);
-#endif
+#include "Component.h"
 
 namespace MCF
 {
 	/// <summary>
 	/// Template class used to define singleton-like virtual method interfaces that are designed
-	/// to be used by different mods. Similar in design to Steam API interfaces.
-	/// This class should be inherited by the interface class for TInterface, whose
-	/// header should be made available for other mods to use. The actual implementation should
-	/// inherit from TInterface and implement the virtual methods.
+	/// to be used by different mods. Similar in design to Steam API interfaces. This class should 
+	/// be inherited by the interface class for TInterface, whose header should be made available for 
+	/// other mods to use. The actual implementation should inherit from the SharedInterfaceImp template. 
 	/// </summary>
-	template<class TInt, FixedString version_str>
-	class SharedInterface : public SharedInterfaceBase
+	template<class TInterface, FixedString version_str>
+	class SharedInterface : public IComponent
 	{
 	public:
-		static constexpr const char* version_string = version_str;
-
-		virtual const char* VersionString() const override
-		{
-			return version_string; 
-		}
-
-		virtual bool IsUnloadable() const override
-		{
-			return false;
-		}
+		static constexpr FixedString version_string = version_str;
 
 		/// <summary>
 		/// Get a pointer to an instance of this interface, or NULL if it has not been instantiated yet. 
 		/// </summary>
-		/// <returns></returns>
-		static inline TInt* Get()
+		static inline TInterface* Get()
 		{
-			return (TInt*)MCF_GetInterface(version_string);
+			return (TInterface*)MCF_GetComponent(version_string);
 		}
-	};
-
-	///<summary>
-	///Template class used to store dependencies.
-	///</summary>
-	template<class... TInterfaces> requires (std::is_base_of_v<SharedInterfaceBase, TInterfaces> && ...)
-	struct DepList
-	{
-		static constexpr size_t count = sizeof...(TInterfaces);
-		static const char* version_strings[count == 0 ? 1 : count];
-	};
-	template<typename... TInterfaces> requires (std::is_base_of_v<SharedInterfaceBase, TInterfaces> && ...)
-		const char* DepList<TInterfaces...>::version_strings[] = { TInterfaces::version_string... };
-	
-	/// <summary>
-	/// C struct containing information about the implementation of a particular shared interface. 
-	/// This is passed to the module manager. 
-	/// </summary>
-	struct ImpDetails
-	{
-		SharedInterfaceBase* (*const new_fcn)();
-		void (*const delete_fun)(SharedInterfaceBase*);
-		const char* version_string;
-		const char** dependencies;
-		const size_t num_dependencies;
 	};
 
 	/// <summary>
-	/// Metadata wrapper template for shared interfaces implementations. The shared interface
-	/// implementation should inherit from this.
+	/// Implementation of a SharedInterface.
 	/// </summary>
-	/// <typeparam name="TInterface">Type of abstract interface.</typeparam>
-	/// <typeparam name="DependsOn">List of dependencies.</typeparam>
-	/// <typeparam name="is_core_interface">True if this a "core" interface, i.e. an interface that
-	/// is loaded manually before the interface manager. Constructor will NOT be called.</typeparam>
-	template<class TInt, class TImp, class DependsOn = DepList<>, bool is_core_interface = false> 
-		requires (std::is_base_of_v<SharedInterfaceBase, TInt>)
-	class SharedInterfaceImp : public TInt
-	{
-	private:
-		static SharedInterfaceBase* OpNew() { return new TImp; }
-		static void OpDelete(SharedInterfaceBase* obj) { delete (TImp*)obj; }
-
-	public:
-		static const ImpDetails* ImpDetailsStatic()
-		{
-			static const MCF::ImpDetails meta
-			{
-				&OpNew,
-				&OpDelete,
-				TInt::version_string,
-				DependsOn::version_strings,
-				DependsOn::count
-			};
-			return &meta;
-		}
-
-		virtual const ImpDetails* ImpDetails() const override
-		{
-			return ImpDetailsStatic();
-		}
-
-		virtual const char** Dependencies(size_t* num) const override
-		{
-			*num = DependsOn::count;
-			return DependsOn::version_strings;
-		}
-	};
+	/// <param name="Interface">The abstract interface we are implementing.</param>
+	/// <param name="Implementation">The implementation type. Should be the class that inherits this.</param>
+	/// <param name="DependsOn">List of dependencies, i.e. other IComponents which must be constructed and loaded before this one.</param>
+	/// <param name="is_core_interface">Signifies to the ComponentMan that this interface is a core interface and loaded early. Internal, 
+	/// do not sure on your own components.</param>
+	template<class Interface, class Implementation, class DependsOn = DepList<>, bool is_core_interface = false>
+	class SharedInterfaceImp : public Component<Implementation, Interface::version_string, DependsOn, is_core_interface, Interface> { };
 }

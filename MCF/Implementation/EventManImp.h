@@ -1,6 +1,6 @@
 #pragma once
 #include "../Include/EventMan.h"
-#include "../Include/InterfaceExport.h"
+#include "../Include/Export.h"
 #include <unordered_map>
 #include <unordered_set>
 #include <mutex>
@@ -36,5 +36,5 @@ namespace MCF
 
 		virtual bool RaiseCallResult(HCallResult handle, void* result) override;
 	};
-	MCF_INTERFACE_EXPORT(EventManImp);
+	MCF_COMPONENT_EXPORT(EventManImp);
 }
