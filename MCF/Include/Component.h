@@ -46,8 +46,12 @@ namespace MCF
 
 #ifdef MCF_EXPORTS
 extern "C" __declspec(dllexport) MCF::IComponent * MCF_GetComponent(const char* version_string);
+extern "C" __declspec(dllexport) MCF::IComponent * MCF_AcquireComponent(const char* version_string);
+extern "C" __declspec(dllexport) MCF::IComponent * MCF_ReleaseComponent(const char* version_string);
 #else
 extern "C" __declspec(dllimport) MCF::IComponent * MCF_GetComponent(const char* version_string);
+extern "C" __declspec(dllimport) MCF::IComponent * MCF_AcquireComponent(const char* version_string);
+extern "C" __declspec(dllimport) MCF::IComponent * MCF_ReleaseComponent(const char* version_string);
 #endif
 
 namespace MCF
@@ -63,7 +67,23 @@ namespace MCF
 	};
 	template<typename... Components> requires (std::is_base_of_v<IComponent, Components> && ...)
 		const char* DepList<Components...>::version_strings[] = { Components::version_string... };
-	
+
+	/// <summary>
+	/// Get the index of D in the dependency list L at compile-time.
+	/// </summary>
+	template<class D, class L>
+	struct DepListIndex
+	{
+		static constexpr int index = 0;
+	};;
+
+	template<class D, class Head, class... Tail>
+	struct DepListIndex<D, DepList<Head, Tail...>>
+	{
+		static constexpr bool index = std::is_same_v<D, Head> ? 0 
+			: 1 + DepListIndex<D, DepList<Tail...>>::index;
+	};
+
 	/// <summary>
 	/// C struct containing information about the implementation of a particular component. 
 	/// Passed to the module manager through MCF_GetExportedInterfaces. 
@@ -100,15 +120,53 @@ namespace MCF
 		static IComponent* OpNew() { return new T; }
 		static void OpDelete(IComponent* obj) { delete (T*)obj; }
 
+		IComponent* cached_deps[sizeof(DependsOn::version_strings) / sizeof(char*)] = { };
+
+	protected:
+		/// <summary>
+		/// Efficient cached access to a dependency. Prefer this helper function to 
+		/// Dep::Get(), as it avoids unecessary lookups to MCF_GetComponent.
+		/// </summary>
+		template<class Dep> requires (DepListIndex<Dep, DependsOn>::index < DependsOn::count)
+		Dep* C()
+		{
+			constexpr int i = DepListIndex<Dep, DependsOn>::index;
+			if (cached_deps[i] == nullptr)
+				cached_deps[i] = MCF_GetComponent(Dep::version_string);
+
+			return (Dep*)cached_deps[i];
+		}
+
 	public:
 		static constexpr FixedString version_string = version_str;
 		
 		/// <summary>
-		/// Get a pointer to an instance of this interface, or NULL if it has not been instantiated yet. 
+		/// Get a pointer to an instance of this component, or NULL if it has not been instantiated yet. 
+		/// This does NOT increment the reference count of the underlying Component, and as such using 
+		/// Get() to access a module which is not in the dependency list is unsafe. Consider using Acquire() 
+		/// and Release() instead. 
 		/// </summary>
 		static inline T* Get()
 		{
 			return (T*)MCF_GetComponent(version_string);
+		}
+
+		/// <summary>
+		/// Get a pointer to an instance of this component, or NULL if it has not been instantiated yet. 
+		/// This increments the reference count to this component, so it will not be able to be freed 
+		/// while you are using it.
+		/// </summary>
+		static inline T* Acquire()
+		{
+			return (T*)MCF_AcquireComponent(version_string);
+		}
+
+		/// <summary>
+		/// Release this component, decrementing its reference count.
+		/// </summary>
+		static inline void Release()
+		{
+			return MCF_ReleaseComponent(version_string);
 		}
 
 		static const ComponentInfo* ComponentInfoStatic()

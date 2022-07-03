@@ -4,7 +4,7 @@
 
 namespace MCF
 {
-	class ComponentManImp final : public SharedInterfaceImp<ComponentMan, ComponentManImp, DepList<EventMan>, true>
+	class ComponentManImp final : public SharedInterfaceImp<ComponentMan, ComponentManImp, DepList<>, true>
 	{
 	public:
 		ComponentManImp();

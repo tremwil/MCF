@@ -16,11 +16,32 @@ namespace MCF
 		static constexpr FixedString version_string = version_str;
 
 		/// <summary>
-		/// Get a pointer to an instance of this interface, or NULL if it has not been instantiated yet. 
+		/// Get a pointer to an instance of this component, or NULL if it has not been instantiated yet. 
+		/// This does NOT increment the reference count of the underlying Component, and as such using 
+		/// Get() to access a module which is not in the dependency list is unsafe. Consider using Acquire() 
+		/// and Release() instead. 
 		/// </summary>
 		static inline TInterface* Get()
 		{
 			return (TInterface*)MCF_GetComponent(version_string);
+		}
+
+		/// <summary>
+		/// Get a pointer to an instance of this component, or NULL if it has not been instantiated yet. 
+		/// This increments the reference count to this component, so it will not be able to be freed 
+		/// while you are using it.
+		/// </summary>
+		static inline TInterface* Acquire()
+		{
+			return (TInterface*)MCF_AcquireComponent(version_string);
+		}
+
+		/// <summary>
+		/// Release this component, decrementing its reference count.
+		/// </summary>
+		static inline void Release()
+		{
+			return MCF_ReleaseComponent(version_string);
 		}
 	};
 
