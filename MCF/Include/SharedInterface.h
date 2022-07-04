@@ -51,8 +51,6 @@ namespace MCF
 	/// <param name="Interface">The abstract interface we are implementing.</param>
 	/// <param name="Implementation">The implementation type. Should be the class that inherits this.</param>
 	/// <param name="DependsOn">List of dependencies, i.e. other IComponents which must be constructed and loaded before this one.</param>
-	/// <param name="is_core_interface">Signifies to the ComponentMan that this interface is a core interface and loaded early. Internal, 
-	/// do not sure on your own components.</param>
-	template<class Interface, class Implementation, class DependsOn = DepList<>, bool is_core_interface = false>
-	class SharedInterfaceImp : public Component<Implementation, Interface::version_string, DependsOn, is_core_interface, Interface> { };
+	template<class Interface, class Implementation, class DependsOn = DepList<>>
+	class SharedInterfaceImp : public Component<Implementation, Interface::version_string, DependsOn, Interface> { };
 }

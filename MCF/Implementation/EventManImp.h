@@ -8,7 +8,7 @@
 
 namespace MCF
 {
-	class EventManImp final : public SharedInterfaceImp<EventMan, EventManImp, DepList<>, true>
+	class EventManImp final : public SharedInterfaceImp<EventMan, EventManImp, DepList<>>
 	{
 	private:
 		std::unordered_map<std::string, std::unordered_set<EventCallbackBase*>> callbacks;
@@ -36,5 +36,4 @@ namespace MCF
 
 		virtual bool RaiseCallResult(HCallResult handle, void* result) override;
 	};
-	MCF_COMPONENT_EXPORT(EventManImp);
 }

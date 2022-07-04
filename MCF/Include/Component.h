@@ -3,7 +3,7 @@
 
 namespace MCF
 {
-	struct ComponentInfo;
+	struct CompInfo;
 
 	/// <summary>
 	/// Interface for components, the base objects managed automatically by MCF.
@@ -21,7 +21,7 @@ namespace MCF
 		/// Return a structure containing details about the implementation of this component. 
 		/// </summary>
 		/// <returns></returns>
-		virtual const ComponentInfo* ComponentInfo() const = 0;
+		virtual const CompInfo* ComponentInfo() const = 0;
 
 		/// <summary>
 		/// Return the unique version string of this component.
@@ -45,14 +45,14 @@ namespace MCF
 }
 
 #ifdef MCF_EXPORTS
-extern "C" __declspec(dllexport) MCF::IComponent * MCF_GetComponent(const char* version_string);
-extern "C" __declspec(dllexport) MCF::IComponent * MCF_AcquireComponent(const char* version_string);
-extern "C" __declspec(dllexport) MCF::IComponent * MCF_ReleaseComponent(const char* version_string);
+#define MCF_C_API __declspec(dllexport)
 #else
-extern "C" __declspec(dllimport) MCF::IComponent * MCF_GetComponent(const char* version_string);
-extern "C" __declspec(dllimport) MCF::IComponent * MCF_AcquireComponent(const char* version_string);
-extern "C" __declspec(dllimport) MCF::IComponent * MCF_ReleaseComponent(const char* version_string);
+#define MCF_C_API __declspec(dllimport)
 #endif
+
+extern "C" MCF_C_API MCF::IComponent * MCF_GetComponent(const char* version_string);
+extern "C" MCF_C_API MCF::IComponent * MCF_AcquireComponent(const char* version_string);
+extern "C" MCF_C_API void MCF_ReleaseComponent(const char* version_string);
 
 namespace MCF
 {
@@ -62,6 +62,11 @@ namespace MCF
 	template<class... Components> requires (std::is_base_of_v<IComponent, Components> && ...)
 	struct DepList
 	{
+		static std::initializer_list<IComponent*> GetInstances()
+		{
+			return { MCF_GetComponent(Components::version_string)... };
+		}
+
 		static constexpr size_t count = sizeof...(Components);
 		static const char* version_strings[count == 0 ? 1 : count];
 	};
@@ -88,17 +93,17 @@ namespace MCF
 	/// C struct containing information about the implementation of a particular component. 
 	/// Passed to the module manager through MCF_GetExportedInterfaces. 
 	/// </summary>
-	struct ComponentInfo
+	struct CompInfo
 	{
 		typedef IComponent* (* const NewOp)(void);
 		typedef void (* const DeleteOp)(IComponent*);
 
-		NewOp        new_fun;
-		DeleteOp     delete_fun;
 		const char*  version_string;
 		const char** dependencies;
 		const size_t num_dependencies;
-		const bool   is_core_component;
+
+		NewOp        new_fun;
+		DeleteOp     delete_fun;
 	};
 
 	/// <summary>
@@ -109,10 +114,8 @@ namespace MCF
 	/// <param name="T">The type which will inherit from this template to implement functionality.</param>
 	/// <param name="version_str">A unique version string for this component.</param>
 	/// <param name="DependsOn">List of dependencies, i.e. other IComponents which must be constructed and loaded before this one.</param>
-	/// <param name="is_core_interface">Signifies to the ComponentMan that this component is a core interface and loaded early. Internal, 
-	/// do not sure on your own components.</param>
 	/// <param name="Interface">The interface used as a base class for this component.</param>
-	template<class T, FixedString version_str, class DependsOn = DepList<>, bool is_core_component = false, class Interface = IComponent>
+	template<class T, FixedString version_str, class DependsOn, class Interface = IComponent>
 		requires std::is_base_of_v<IComponent, Interface>
 	class Component : public Interface
 	{
@@ -120,24 +123,34 @@ namespace MCF
 		static IComponent* OpNew() { return new T; }
 		static void OpDelete(IComponent* obj) { delete (T*)obj; }
 
-		IComponent* cached_deps[sizeof(DependsOn::version_strings) / sizeof(char*)] = { };
+		template<typename S>
+		struct DepPtrArray { };
+
+		template<typename... Deps> 
+		struct DepPtrArray<DepList<Deps...>>
+		{
+			IComponent* deps[sizeof...(Deps) == 0 ? 1 : sizeof...(Deps)] = { MCF_GetComponent(Deps::version_string)... };
+		};
+
+		DepPtrArray<DependsOn> dep_list;
 
 	protected:
 		/// <summary>
-		/// Efficient cached access to a dependency. Prefer this helper function to 
-		/// Dep::Get(), as it avoids unecessary lookups to MCF_GetComponent.
+		/// Efficient access to a dependency. Prefer this helper function to 
+		/// Dep::Get(), as it avoids unecessary calls to MCF_GetComponent.
 		/// </summary>
 		template<class Dep> requires (DepListIndex<Dep, DependsOn>::index < DependsOn::count)
 		Dep* C()
 		{
 			constexpr int i = DepListIndex<Dep, DependsOn>::index;
-			if (cached_deps[i] == nullptr)
-				cached_deps[i] = MCF_GetComponent(Dep::version_string);
-
-			return (Dep*)cached_deps[i];
+			return (Dep*)dep_list.deps[i];
 		}
 
 	public:
+		Component() { };
+		Component(Component&) = delete;
+		Component(Component&&) = delete;
+
 		static constexpr FixedString version_string = version_str;
 		
 		/// <summary>
@@ -169,21 +182,20 @@ namespace MCF
 			return MCF_ReleaseComponent(version_string);
 		}
 
-		static const ComponentInfo* ComponentInfoStatic()
+		static const CompInfo* ComponentInfoStatic()
 		{
-			static const MCF::ComponentInfo meta
+			static const MCF::CompInfo meta
 			{
-				.new_fun = &OpNew,
-				.delete_fun = &OpDelete,
 				.version_string = version_string,
 				.dependencies = DependsOn::version_strings,
 				.num_dependencies = DependsOn::count,
-				.is_core_component = is_core_component
+				.new_fun = &OpNew,
+				.delete_fun = &OpDelete,
 			};
 			return &meta;
 		}
 
-		virtual const ComponentInfo* ComponentInfo() const override
+		virtual const CompInfo* ComponentInfo() const override
 		{
 			return ComponentInfoStatic();
 		}
@@ -195,7 +207,7 @@ namespace MCF
 
 		virtual bool IsUnloadable() const override
 		{
-			return !is_core_component;
+			return false;
 		}
 
 		virtual const char** Dependencies(size_t* num) const override
@@ -203,5 +215,27 @@ namespace MCF
 			*num = DependsOn::count;
 			return DependsOn::version_strings;
 		}
+	};
+
+	/// <summary>
+	/// Wrapper around a given component that automatically 
+	/// Acquires() on construction and Releases() when destroyed (i.e. goes out of scope).
+	/// Prefer this to directly calling C::Acquire/Release or the C API functions.
+	/// </summary>
+	/// <typeparam name="C"></typeparam>
+	template<class C> 
+	struct SmartComp
+	{
+	private:
+		C* instance;
+
+	public:
+		SmartComp(SmartComp&) = delete;
+		SmartComp(SmartComp&&) = delete;
+
+		SmartComp() : instance(C::Acquire()) { }
+		~SmartComp() { C::Release(); }
+
+		C* operator()() const { return instance; }
 	};
 }

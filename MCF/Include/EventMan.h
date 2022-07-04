@@ -73,9 +73,19 @@ namespace MCF
 		/// Note that no particular firing order is guaranteed.
 		/// </summary>
 		/// <param name="event_data">The data associated with this event.</param>
-		template<typename TEvent> void RaiseEvent(void* event_data)
+		template<typename TEvent> void RaiseEvent(TEvent* event_data)
 		{
 			RaiseEvent(TEvent::name, event_data);
+		}
+
+		/// <summary>
+		/// Raise an event by type. All currently registered event callbacks with this event name will be fired.
+		/// Note that no particular firing order is guaranteed.
+		/// </summary>
+		/// <param name="event_data">The data associated with this event.</param>
+		template<typename TEvent> void RaiseEvent(TEvent event_data)
+		{
+			RaiseEvent(TEvent::name, &event_data);
 		}
 
 		/// <summary>
