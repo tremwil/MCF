@@ -11,20 +11,10 @@ namespace MCF
 	public:
 		enum class LoadResult : int32_t
 		{
-			Success = 0,
-			NameConflict = 1,
-			DependencyNotFound = 2,
-			CircularDependency = 3
-		};
-
-		/// <summary>
-		/// Event raised when a component was just unloaded.
-		/// </summary>
-		struct ComponentUnloadEvent : public Event<"MCF_CM_UNLOAD_EVENT">
-		{
-			const CompInfo* info;
-			IComponent* instance;
-			LoadResult result;
+			Success = 0, // Component was loaded successfully.
+			NameConflict = 1, // There is a component with the same name already loaded. 
+			DependencyNotFound = 2, // The component has a dependency which could not be found.
+			CircularDependency = 3, // The component was part of a circular dependency. 
 		};
 
 		/// <summary>
@@ -44,6 +34,33 @@ namespace MCF
 			const CompInfo** batch;
 			const LoadResult* results;
 			IComponent** instances;
+			size_t count;
+		};
+
+		enum class UnloadResult : int32_t
+		{
+			Success = 0, // Component was unloaded successfully.
+			NameNotFound = 1, // Provided version string could not be found. 
+			HasDependent = 2, // Component has a dependent module still loaded, and as such cannot be freed.
+			IsNotUnloadable = 3, // Component was marked as not unloadable.
+		};
+
+		/// <summary>
+		/// Event raised when an unload operation has begun.
+		/// </summary>
+		struct UnloadBeginEvent : public Event<"MCF_CM_UNLOAD_BEGIN_EVENT">
+		{
+			const char** version_strings;
+			size_t count;
+		};
+
+		/// <summary>
+		/// Event raised when an unload operation has completed.
+		/// </summary>
+		struct UnloadCompleteEvent : public Event<"MCF_CM_UNLOAD_BEGIN_EVENT">
+		{
+			const char** version_strings;
+			UnloadResult* results;
 			size_t count;
 		};
 
@@ -79,10 +96,10 @@ namespace MCF
 		virtual void LoadComponents(const CompInfo* comps[], size_t count) = 0;
 
 		/// <summary>
-		/// Unload a set of components.
+		/// Unload a set of components by version strings.
 		/// If unload_deps is true, will unload components that depend on the ones unloaded instead of failing.
 		/// </summary>
-		virtual void UnloadComponents(const CompInfo* comps[], size_t count, bool unload_deps = true) = 0;
+		virtual void UnloadComponents(const char* comps[], size_t count, bool unload_deps = true) = 0;
 
 		/// <summary>
 		/// Load all the components exported by a set of DLLs.

@@ -1,26 +1,33 @@
 #pragma once
 #include "Include/ComponentMan.h"
+#include "Include/Logger.h"
 #include "Include/Export.h"
 #include "common.h"
 
 namespace MCF
 {
-	class ComponentManImp final : public SharedInterfaceImp<ComponentMan, ComponentManImp, DepList<EventMan>>
+	class ComponentManImp final : public SharedInterfaceImp<ComponentMan, ComponentManImp, DepList<EventMan, Logger>>
 	{
 	private:
+		typedef const MCF::CompInfo** (*GetExportedComponents_t)(size_t* n);
+
 		struct DepGraphNode
 		{
-			std::unordered_set<DepGraphNode*> inward; // Nodes which depend on this one
-			std::unordered_set<DepGraphNode*> outward; // Nodes which this one depends on
+			std::unordered_set<DepGraphNode*> dependents; // Nodes which depend on this one
+			std::unordered_set<DepGraphNode*> dependencies; // Nodes which this one depends on
 
 			const CompInfo* comp_info;
+			HMODULE dll_handle;
 			IComponent* instance;
-			int32_t ref_count;
 		};
 
+		int32_t ref_counts = 0;
+		std::condition_variable ref_cv;
+
+		std::unordered_map<HMODULE, int32_t> dll_ref_counts;
 		std::unordered_map<std::string, DepGraphNode*> components;
-		std::recursive_mutex mutex;
-		
+		std::mutex mutex;
+
 	public:
 		/// <summary>
 		/// Get the instance of a particular component by its unique version string.
@@ -54,10 +61,10 @@ namespace MCF
 		virtual void LoadComponents(const CompInfo* comps[], size_t count) override;
 
 		/// <summary>
-		/// Unload a set of components.
+		/// Unload a set of components by version string.
 		/// If unload_deps is true, will unload components that depend on the ones unloaded instead of failing.
 		/// </summary>
-		virtual void UnloadComponents(const CompInfo* comps[], size_t count, bool unload_deps = true) override;
+		virtual void UnloadComponents(const char* comps[], size_t count, bool unload_deps = true) override;
 
 		/// <summary>
 		/// Load all the components exported by a set of DLLs.

@@ -18,9 +18,9 @@ namespace MCF
 		}
 	};
 
-	// Class template which can be used to automatically register a shared interface implementation
-	// on boot (if you add InterfaceExport.cpp to your project). If you prefer to 
-	// do things manually, you will have to define MCF_GetExportedInterfacesMeta yourself.
+	// Class template which can be used to automatically register a component
+	// on boot (if you add Export.cpp to your project). If you prefer to 
+	// do things manually, you will have to define MCF_GetExportedComponents yourself.
 	template<typename T>
 	struct AutoExport : public AutoExportBase
 	{
@@ -42,4 +42,4 @@ namespace MCF
 }
 #define MCF_COMPONENT_EXPORT(T) int AutoExport<T>::ex = AutoExport<T>::AddOnce();
 
-extern "C" __declspec(dllexport) const MCF::CompInfo** MCF_GetExportedInterfaces(size_t* n);
+extern "C" __declspec(dllexport) const MCF::CompInfo** MCF_GetExportedComponents(size_t* n);

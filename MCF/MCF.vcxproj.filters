@@ -21,9 +21,6 @@
     <ClInclude Include="Include\Component.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Include\Mod.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Include\TemplateUtils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -93,6 +90,12 @@
     <ClInclude Include="Include\SharedInterface.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Include\Logger.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Implementation\LoggerImp.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp">
@@ -141,6 +144,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Implementation\EventManImp.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Implementation\LoggerImp.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
