@@ -200,7 +200,7 @@ namespace MCF
 				if (--dll_ref_counts[node->dll_handle] < 0)
 				{
 					C<Logger>()->Warn(this, "Negative ref count for DLL {} upon unloading component {}",
-						node->dll_handle, node->comp_info->version_string);
+						(void*)node->dll_handle, node->comp_info->version_string);
 
 					dll_ref_counts[node->dll_handle] = 0;
 				}
