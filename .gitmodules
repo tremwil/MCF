@@ -1,6 +1,3 @@
-[submodule "MCF/ThirdParty/zydis"]
-	path = MCF/ThirdParty/zydis
-	url = https://github.com/zyantific/zydis.git
 [submodule "MCF/ThirdParty/imgui"]
 	path = MCF/ThirdParty/imgui
 	url = https://github.com/ocornut/imgui.git
