@@ -8,7 +8,7 @@
 
 namespace MCF
 {
-	class EventManImp final : public SharedInterfaceImp<EventMan, EventManImp, DepList<>>
+	class EventManImp final : public SharedInterfaceImp<EventMan, EventManImp>
 	{
 	private:
 		std::unordered_map<std::string, std::unordered_set<EventCallbackBase*>> callbacks;

@@ -52,5 +52,5 @@ namespace MCF
 	/// <param name="Implementation">The implementation type. Should be the class that inherits this.</param>
 	/// <param name="DependsOn">List of dependencies, i.e. other IComponents which must be constructed and loaded before this one.</param>
 	template<class Interface, class Implementation, class DependsOn = DepList<>>
-	class SharedInterfaceImp : public Component<Implementation, Interface::version_string, DependsOn, Interface> { };
+	using SharedInterfaceImp = Component<Implementation, Interface::version_string, DependsOn, Interface>;
 }

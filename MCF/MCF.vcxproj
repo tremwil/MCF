@@ -172,6 +172,7 @@
     <ClInclude Include="Implementation\EventManImp.h" />
     <ClInclude Include="Implementation\LoggerImp.h" />
     <ClInclude Include="Include\AobScanMan.h" />
+    <ClInclude Include="Include\CommandMan.h" />
     <ClInclude Include="Include\EventMan.h" />
     <ClInclude Include="Include\Hooking\HookManBase.h" />
     <ClInclude Include="Include\Hooking\IATHookMan.h" />
