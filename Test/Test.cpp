@@ -3,12 +3,43 @@
 
 #include <iostream>
 #include <Windows.h>
+#include <vector>
 
-int main()
+std::vector<char> input_buf(1024);
+
+void log(const char* text)
 {
-    HMODULE hMod = LoadLibraryA("MCF.dll");
-    printf("addr: %p", hMod);
-    std::cout << "Hello World!\n";
+	std::cout << text << std::endl;
+
+	HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+
+	CONSOLE_SCREEN_BUFFER_INFO bInfo;
+	GetConsoleScreenBufferInfo(hOut, &bInfo);
+
+	auto windowBefore = bInfo.srWindow;
+
+	std::vector<char> separator(bInfo.dwSize.X-1, '=');
+	separator.push_back('\0');
+
+	SetConsoleCursorPosition(hOut, { 0, (SHORT)(bInfo.srWindow.Bottom - 1) });
+	std::cout << separator.data();
+	SetConsoleCursorPosition(hOut, bInfo.dwCursorPosition);
+
+	GetConsoleScreenBufferInfo(hOut, &bInfo);
+
+	if (bInfo.srWindow.Bottom - bInfo.dwCursorPosition.Y < 3)
+	{
+		bInfo.srWindow.Top += bInfo.dwCursorPosition.Y - bInfo.srWindow.Bottom + 3;
+		bInfo.srWindow.Bottom += bInfo.dwCursorPosition.Y - bInfo.srWindow.Bottom + 3;
+		SetConsoleWindowInfo(hOut, true, &bInfo.srWindow);
+	}
+}
+
+void main() {
+	for (int i = 0; i < 100; i++) {
+		log("TEST");
+		Sleep(500);
+	}
 }
 
 // Run program: Ctrl + F5 or Debug > Start Without Debugging menu

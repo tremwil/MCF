@@ -13,7 +13,7 @@ namespace MCF
 		{
 			const char* source;
 			const char* sev;
-			const wchar_t* w_msg;
+			const char* msg;
 		};
 
 		static constexpr const char* SevDebug = "debug";

@@ -171,6 +171,7 @@
     <ClInclude Include="common.h" />
     <ClInclude Include="Implementation\EventManImp.h" />
     <ClInclude Include="Implementation\LoggerImp.h" />
+    <ClInclude Include="Implementation\WindowsCLIImp.h" />
     <ClInclude Include="Include\AobScanMan.h" />
     <ClInclude Include="Include\CommandMan.h" />
     <ClInclude Include="Include\EventMan.h" />
@@ -184,6 +185,7 @@
     <ClInclude Include="Include\TemplateUtils.h" />
     <ClInclude Include="Include\Utils.h" />
     <ClInclude Include="Implementation\ComponentManImp.h" />
+    <ClInclude Include="Include\WindowsCLI.h" />
     <ClInclude Include="ThirdParty\ImGui\backends\imgui_impl_dx10.h" />
     <ClInclude Include="ThirdParty\ImGui\backends\imgui_impl_dx11.h" />
     <ClInclude Include="ThirdParty\ImGui\backends\imgui_impl_dx12.h" />
@@ -202,6 +204,7 @@
     <ClCompile Include="Implementation\EventManImp.cpp" />
     <ClCompile Include="Implementation\ComponentManImp.cpp" />
     <ClCompile Include="Implementation\LoggerImp.cpp" />
+    <ClCompile Include="Implementation\WindowsCLIImp.cpp" />
     <ClCompile Include="Include\Export.cpp" />
     <ClCompile Include="ThirdParty\ImGui\backends\imgui_impl_dx10.cpp" />
     <ClCompile Include="ThirdParty\ImGui\backends\imgui_impl_dx11.cpp" />

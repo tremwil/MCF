@@ -11,7 +11,7 @@ namespace MCF
 	private:
 		std::regex re_src;
 		std::regex re_sev;
-		std::wregex re_msg;
+		std::regex re_msg;
 		uint32_t re_flags;
 
 		std::shared_mutex filter_mutex;
