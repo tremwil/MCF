@@ -1,0 +1,26 @@
+[loading]
+# If true, the game will be killed if MCF fails to load all components.
+terminate_on_load_failure = true
+
+# List of paths to external DLL mods that do not use MCF which we also want to load. The DLLs are loaded in the
+# order they appear in this list, after the MCF initial load step. These mods are guaranteed to be loaded before
+# any game code has ran.
+external_dll_paths = []
+
+[hotkeys]
+# True if hotkeys are enabled. Hotkeys can be used directly by components or bound to run specific commands using
+# the hotkey manager.
+enabled = true
+# VK code of the hotkey to show/hide the Windows CLI. Default is the code for `/~ (key above ESC) on a EN-US keyboard
+windows_console_hotkey = 0xC0
+
+[logging]
+# Whether or not to open the debug console before the core MCF library has been initialized.
+# This can be useful when debugging an error that occurs early during the bootstrapping process.
+early_console = false
+
+# Default switch for log message visibility by severity (regex).
+# MCF-defined severities are "debug", "info", "warn" and "error".
+# Mods can define additional severities (for example, an anti-cheat mod could define a "cheater" severity for flags)
+# Can be changed at runtime.
+log_severity_filter = "info|warn|error"

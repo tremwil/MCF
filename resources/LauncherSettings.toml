@@ -1,0 +1,17 @@
+[launcher]
+# The Steam AppId of the game you want to load MCF with. If injecting into a non-Steam game, set to 0.
+target_appid = 0
+# Game executable path. If injecting into a Steam game, should be a relative path from the "local files" folder
+# of the game in your Steam library to the game executable. If injecting into a non-Steam game, set to the absolute path to your game.
+game_exe_relative_path = ""
+
+[external_mods]
+# List of paths to external DLL mods that do not use MCF which we also want to load. The DLLs are loaded in the
+# order they appear in this list. Unlike the settings of the same name in MCFSettings, the DLLs put here are loaded
+# a fixed delay after the game has started. As such it is prefered to load DLLs using the MCF settings. This option
+# is merely here for maximum compatibility.
+paths = []
+# Amount of time, in milliseconds, to wait after the process is resumed before loading the DLLs specified above.
+initial_delay = 0
+# Amount of time, in milliseconds, to wait after between each DLL load.
+delay_between_dlls = 0
