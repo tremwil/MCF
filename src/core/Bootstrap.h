@@ -21,8 +21,6 @@ namespace MCF
         std::filesystem::path launcher_dir;
         std::unique_ptr<ComponentManImp> comp_man;
 
-        int c = 5;
-
         void Init(bool used_launcher);
 
         static Bootstrap& Get();

@@ -43,7 +43,7 @@ namespace MCF
         }
 
         if (!comp_man->InitializeCore()) {
-            MessageBoxA(nullptr, "MCF Core Library failed to initialize. Set early_console to true for more information", "MCF Error", MB_OK | MB_ICONERROR);
+            MessageBoxA(nullptr, "MCF Core Library failed to initialize. Set early_console to true for more information.", "MCF Error", MB_OK | MB_ICONERROR);
             exit(0);
         }
 
@@ -52,7 +52,7 @@ namespace MCF
         // and so we have things like the Windows CLI and file logger components loaded
         const char* mcf[] = { "MCF.dll" };
         if (!comp_man->LoadDlls(mcf, 1) && exit_on_fail) {
-            // TODO: Proper error message
+            MessageBoxA(nullptr, "The MCF library failed to initialize completely. Set debug to true for more information.", "MCF Error", MB_OK | MB_ICONERROR);
             exit(0);
         }
 
@@ -75,16 +75,11 @@ namespace MCF
             dll_cstrs.push_back(dll.c_str());
 
         if (!comp_man->LoadDlls(dll_cstrs.data(), dll_cstrs.size()) && exit_on_fail) {
-            // TODO: Proper error message
+            MessageBoxA(nullptr, "Some mods failed to initialize. Set debug to true for more information.", "MCF Error", MB_OK | MB_ICONERROR);
             exit(0);
         }
 
         // Load external DLLs into the process
-
-        Test1::value += 1;
-        logger->Info("TEST1", "{}", Test1::value);
-        Test2::value += 1;
-        logger->Info("TEST2", "{}", Test2::value);
 
         std::vector<std::string> external_dlls = toml::find_or<std::vector<std::string>>(
                 CoreSettings, "loading", "external_dll_paths", std::vector<std::string>());
