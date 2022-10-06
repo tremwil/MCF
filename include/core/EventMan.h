@@ -14,16 +14,27 @@
 
 namespace MCF
 {
-    /// <summary>
+    /// Base abstract class for all events. Events inheriting from this that will be shared across modules
+    /// should *NOT* use STL types as public fields. If you do want to use STL types, make them private and
+    /// write a virtual function to access the inner POD type.
+    struct EventData
+    {
+    protected:
+        friend class EventManImp;
+        virtual ~EventData() = default;
+
+        /// Make a dynamically allocated instance of event data free itself.
+        virtual void Free() = 0;
+    };
+
     /// Base abstract class for all event callbacks (listeners).
-    /// </summary>
     class EventCallbackBase
     {
     protected:
         friend class EventManImp;
 
-        virtual void Run(void* event_data) = 0;
-        [[nodiscard]] virtual const char* EventName() const = 0;
+        virtual void Run(const EventData* data) = 0;
+        virtual const char* EventName() const = 0;
     };
 
     /// Base abstract class for call results. A call result is essentially a single-time callback that is
@@ -33,7 +44,7 @@ namespace MCF
     {
     protected:
         friend class EventManImp;
-        virtual void Run(void* result) = 0;
+        virtual void Run(const EventData* result) = 0;
     };
 
     /// Handle to a specific bound call result (bound meaning associated with a particular function call).
@@ -42,8 +53,14 @@ namespace MCF
     /// Base class for all events. Event name should be unique. All event structs should be C "POD" structs,
     /// as they are passed across DLLs. Note that call result structs do not need a name, and as such
     /// inheriting from this class is not required.
-    template<FixedString event_name>
-    struct Event { static constexpr const char* name = event_name; };
+    /// \tparam E The event type inheriting from this class.
+    /// \tparam event_name A unique name assigned to this event.
+    template<class E, FixedString event_name>
+    struct Event : EventData
+    {
+        static constexpr const char* name = event_name;
+        void Free() override { delete (E*)this; }
+    };
 
     /// Class which manages and dispatches events. Events are structured similarly to Steam callbacks
     /// and call results. Anything may listen for and dispatch events.
@@ -61,20 +78,31 @@ namespace MCF
 
         /// Raise an event by name. All currently registered event callbacks with this event name will be fired.
         /// Note that no particular firing order is guaranteed.
-        virtual void RaiseEvent(const char* event_name, void* event_data) = 0;
+        /// \tparam event_name Name of the event to raise.
+        /// \tparam data Pointer to the event data. Must be dynamically allocated; the callee frees it when done.
+        /// \tparam deferred if true, the callbacks will be deferred to run on the main event thread. Otherwise,
+        /// will all be called before this method returns.
+        virtual void RaiseEvent(const char* event_name, EventData* data, bool deferred) = 0;
 
         /// Raise an event by type. All currently registered event callbacks with this event name will be fired.
         /// Note that no particular firing order is guaranteed.
-        template<typename TEvent> void RaiseEvent(TEvent* event_data)
+        /// \tparam data Pointer to the event data. Must be dynamically allocated; the callee frees it when done.
+        /// \tparam deferred if true, the callbacks will be deferred to run on the main event thread. Otherwise,
+        /// will all be called before this method returns.
+        template<typename TEvent> void RaiseEvent(TEvent* data, bool deferred = true)
         {
-            RaiseEvent(TEvent::name, event_data);
+            RaiseEvent(TEvent::name, data, deferred);
         }
 
         /// Raise an event by type. All currently registered event callbacks with this event name will be fired.
         /// Note that no particular firing order is guaranteed.
-        template<typename TEvent> void RaiseEvent(TEvent event_data)
+        /// \tparam data Event data. Must be copy-constructible.
+        /// \tparam deferred if true, the callbacks will be deferred to run on the main event thread. Otherwise,
+        /// will all be called before this method returns.
+        template<typename TEvent> void RaiseEvent(const TEvent& data, bool deferred = true)
+            requires std::is_copy_constructible_v<TEvent>
         {
-            RaiseEvent(TEvent::name, &event_data);
+            RaiseEvent(TEvent::name, new TEvent(data), deferred);
         }
 
         /// "Binds" a call result, returning a handle which can be used to call it once the task to be performed
@@ -92,26 +120,32 @@ namespace MCF
 
         /// Raises a call result by handle, firing the callback which was registered using BindCallResult.
         /// This unbinds the handle, so it can only be called once.
+        /// \tparam data Pointer to the event data. Must be dynamically allocated; the callee frees it when done.
+        /// \tparam deferred if true, the callbacks will be deferred to run on the main event thread. Otherwise,
+        /// will all be called before this method returns.
         /// \return A boolean indicating success/failure.
-        virtual bool RaiseCallResult(HCallResult handle, void* result) = 0;
+        virtual bool RaiseCallResult(HCallResult handle, EventData* data, bool deferred) = 0;
 
         /// Raises a call result by handle, firing the callback which was registered using BindCallResult.
         /// This unbinds the handle, so it can only be called once.
+        /// \tparam data Event data. Must be copy-constructible.
+        /// \tparam deferred if true, the callbacks will be deferred to run on the main event thread. Otherwise,
+        /// will all be called before this method returns.
         /// \return A boolean indicating success/failure.
-        template<typename TResult> bool RaiseEvent(HCallResult handle, TResult result)
+        template<typename TResult> bool RaiseCallResult(HCallResult handle, const TResult& result, bool deferred = true)
         {
-            return RaiseCallResult(handle, &result);
+            return RaiseCallResult(handle, new TResult(result), deferred);
         }
     };
 
     /// Event callback which uses an std::function to allow registering callbacks on any callable object.
     /// May be registered on creation or manually. Unregistered automatically when destroyed.
     /// \tparam TEvent The associated event type
-    template<typename TEvent>
+    template<typename TEvent> requires std::is_base_of_v<EventData, TEvent>
     class EventCallback : public EventCallbackBase, private NonAssignable
     {
     protected:
-        std::function<void(TEvent*)> fun;
+        std::function<void(const TEvent*)> fun;
         Dependency<EventMan> eventMan;
 
         bool TryRegister()
@@ -121,7 +155,7 @@ namespace MCF
             return true;
         }
 
-        void Run(void* event_data) override { fun((TEvent*)event_data); }
+        void Run(const EventData* data) override { fun((const TEvent*)data); }
         [[nodiscard]] const char* EventName() const override { return TEvent::name; }
 
     public:
@@ -130,16 +164,16 @@ namespace MCF
         /// Registers this callback with a function to a member function pointer.
         /// </summary>
         template<typename TObj>
-        bool Register(void(TObj::* cb)(TEvent*), TObj* instance)
+        bool Register(void(TObj::* cb)(const TEvent*), TObj* instance)
         {
-            fun = std::bind(cb, instance);
+            fun = std::bind(cb, instance, std::placeholders::_1);
             return TryRegister();
         }
 
         /// <summary>
         /// Registers this callback with a general callable object.
         /// </summary>
-        template<typename TCallable> requires std::is_invocable_r_v<void, TCallable, TEvent*>
+        template<typename TCallable> requires std::is_invocable_r_v<void, TCallable, const TEvent*>
         bool Register(TCallable cb)
         {
             fun = cb;
@@ -162,7 +196,7 @@ namespace MCF
         /// Constructs and registers this callback with a function to a member function pointer.
         /// </summary>
         template<typename TObj>
-        EventCallback(void(TObj::* cb)(TEvent*), TObj* instance)
+        EventCallback(void(TObj::* cb)(const TEvent*), TObj* instance)
         {
             Register(cb, instance);
         }
@@ -170,7 +204,7 @@ namespace MCF
         /// <summary>
         /// Constructs and registers this callback with a general callable object.
         /// </summary>
-        template<typename TCallable> requires std::is_invocable_r_v<void, TCallable, TEvent*>
+        template<typename TCallable> requires std::is_invocable_r_v<void, TCallable, const TEvent*>
         EventCallback(TCallable cb)
         {
             Register(cb);
@@ -179,14 +213,14 @@ namespace MCF
         ~EventCallback() { Unregister(); }
     };
 
-    template<typename TResult>
-class CallResult : public CallResultBase, private NonAssignable
+    template<typename TResult> requires std::is_base_of_v<EventData, TResult>
+    class CallResult : public CallResultBase, private NonAssignable
     {
     protected:
         Dependency<EventMan> eventMan;
 
-        std::function<void(TResult*)> fun;
-        void Run(void* result) override { fun((TResult*)result); }
+        std::function<void(const TResult*)> fun;
+        void Run(const EventData* result) override { fun((const TResult*)result); }
 
     public:
 
@@ -195,7 +229,7 @@ class CallResult : public CallResultBase, private NonAssignable
         /// WARNING: Changing this after the call result has been bound is not thread safe.
         /// </summary>
         template<typename TObj>
-        void SetCallback(void(TObj::* cb)(TResult*), TObj* instance)
+        void SetCallback(void(TObj::* cb)(const TResult*), TObj* instance)
         {
             fun = std::bind(cb, instance);
         }
@@ -204,7 +238,7 @@ class CallResult : public CallResultBase, private NonAssignable
         /// Sets the callback of this call result to a general callable object.
         /// WARNING: Changing this after the call result has been bound is not thread safe.
         /// </summary>
-        template<typename TCallable> requires std::is_invocable_r_v<void, TCallable, TResult*>
+        template<typename TCallable> requires std::is_invocable_r_v<void, TCallable, const TResult*>
         void SetCallback(TCallable cb)
         {
             fun = cb;
@@ -224,12 +258,12 @@ class CallResult : public CallResultBase, private NonAssignable
         /// Constructs and registers this call result with a function to a member function pointer.
         /// </summary>
         template<typename TObj>
-        CallResult(void(TObj::* cb)(TResult*), TObj* instance) { SetCallback(cb, instance); }
+        CallResult(void(TObj::* cb)(const TResult*), TObj* instance) { SetCallback(cb, instance); }
 
         /// <summary>
         /// Constructs and registers this call result with a general callable object.
         /// </summary>
-        template<typename TCallable> requires std::is_invocable_r_v<void, TCallable, TResult*>
+        template<typename TCallable> requires std::is_invocable_r_v<void, TCallable, const TResult*>
         CallResult(TCallable cb) { SetCallback(cb); }
 
         ~CallResult() { Unregister(); }

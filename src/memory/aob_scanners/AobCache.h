@@ -8,9 +8,9 @@
  */
 
 #pragma once
+#include "memory/MemRegion.h"
 
-
-class BasicScanner
+namespace MCF
 {
 
-};
+} // MCF

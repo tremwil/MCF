@@ -162,8 +162,8 @@ namespace MCF
 
     bool ComponentManImp::LoadComponents(const ComponentFactory* comps[], size_t count)
     {
-        std::lock_guard<decltype(mutex)> lock(mutex);
-        std::lock_guard<decltype(release_mutex)> release_lock(release_mutex);
+        std::unique_lock<decltype(mutex)> lock(mutex);
+        std::unique_lock<decltype(release_mutex)> release_lock(release_mutex);
 
         if (!load_queue.empty() || is_unloading)
             return false;
@@ -214,6 +214,9 @@ namespace MCF
                 }
             }
         }
+
+        lock.unlock();
+        release_lock.unlock();
 
         bool all_success = std::all_of(
                 out_load_results.begin(),

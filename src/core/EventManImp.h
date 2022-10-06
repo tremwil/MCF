@@ -13,6 +13,7 @@
 #include <unordered_set>
 #include <mutex>
 #include <string>
+#include <concurrentqueue/blockingconcurrentqueue.h>
 
 namespace MCF
 {
@@ -27,16 +28,25 @@ namespace MCF
         std::recursive_mutex cr_mutex;
         HCallResult handle_ctr = 0;
 
+        moodycamel::BlockingConcurrentQueue<std::tuple<std::string, HCallResult, EventData*>> deferred_events;
+        std::thread deferred_event_thread;
+
+        void RunCallbacks(const std::string &event_name, EventData* data);
+
+        bool RunCallResult(HCallResult handle, EventData* result);
+
+        void UnbindCallResultInternal(HCallResult handle);
+
+        ~EventManImp() override;
+
     public:
         EventManImp(const bool* success);
-
-        bool IsUnloadable() const override { return true; }
 
         void RegisterCallback(EventCallbackBase* callback) override;
 
         void UnregisterCallback(EventCallbackBase* callback) override;
 
-        void RaiseEvent(const char* event_name, void* event_data) override;
+        void RaiseEvent(const char* event_name, EventData* data, bool deferred) override;
 
         HCallResult BindCallResult(CallResultBase* call_result) override;
 
@@ -44,6 +54,6 @@ namespace MCF
 
         void UnregisterCallResult(CallResultBase* call_result) override;
 
-        bool RaiseCallResult(HCallResult handle, void* result) override;
+        bool RaiseCallResult(HCallResult handle, EventData* result, bool deferred) override;
     };
 }

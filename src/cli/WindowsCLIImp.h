@@ -49,7 +49,7 @@ namespace MCF
             std::string severity;
             std::string message;
 
-            QueuedLogMessage(Logger::LogEvent* evt) :
+            QueuedLogMessage(const Logger::LogEvent* evt) :
                 source(evt->source),
                 severity(evt->sev),
                 message(evt->msg) { };
@@ -57,7 +57,7 @@ namespace MCF
 
         std::queue<QueuedLogMessage> msg_queue;
 
-        EventCallback<Logger::LogEvent> log_cb = [this](Logger::LogEvent *evt) {
+        EventCallback<Logger::LogEvent> log_cb = [this](const Logger::LogEvent *evt) {
             if (!load_success) return;
 
             std::lock_guard<decltype(mutex)> lock(mutex);

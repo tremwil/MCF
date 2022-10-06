@@ -16,11 +16,17 @@ namespace MCF
     class Logger : public SharedInterface<Logger, "MCF_LOGGER_001">
     {
     public:
-        struct LogEvent : Event<"MCF_LOG_EVENT">
+        struct LogEvent : Event<LogEvent, "MCF_LOG_EVENT">
         {
-            const char* source;
-            const char* sev;
-            const char* msg;
+        private:
+            friend class LoggerImp; // To avoid needless virtual indirection
+            std::string source;
+            std::string sev;
+            std::string msg;
+        public:
+            virtual const char* Source() const { return source.c_str(); }
+            virtual const char* Sev() const { return sev.c_str(); }
+            virtual const char* Msg() const { return msg.c_str(); }
         };
 
         static constexpr const char* SevDebug = "debug";

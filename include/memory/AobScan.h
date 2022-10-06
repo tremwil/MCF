@@ -10,8 +10,10 @@
 #pragma once
 #include "core/EventMan.h"
 #include "core/Logger.h"
+#include "core/ComponentMan.h"
 #include "MemRegion.h"
 #include "util/TemplateUtils.h"
+
 #include <string>
 #include <utility>
 
@@ -125,22 +127,14 @@ namespace MCF
         }
     };
 
-    struct AobScanResult {
-        CAob* aob;
-        size_t num_results;
-        uintptr_t* addresses;
-
-        void FreeAddresses()
-        {
-            if (deallocator && addresses) {
-                deallocator(addresses);
-                addresses = nullptr;
-            }
-        }
-
+    struct AobScanResult : EventData {
     private:
-        friend class AobScanManImp;
-        void (*deallocator)(void*); // Deallocator will be nullptr when not manually allocated
+        friend class AobScannerImp;
+        std::vector<uintptr_t> addresses;
+    public:
+        virtual const uintptr_t* Addresses() const { return addresses.data(); }
+        virtual size_t NumResults() const { return addresses.size(); }
+        void Free() override { delete this; }
     };
 
     /// Cached, efficient AOB scanner. Can scan for memory immediately or batch AOBs to be efficiently scanned
@@ -149,10 +143,10 @@ namespace MCF
     {
     public:
         // TODO: Provide more useful information here (though the main use of this event would just be waiting for all AOBs to be initialized
-        struct BatchScanCompleteEvent : Event<"MCF_AOB_SCAN_EVT_001">
+        struct BatchScanCompleteEvent : Event<BatchScanCompleteEvent, "MCF_AOB_SCAN_EVT_001">
         {
             /// Number of AOBs that were registered for scanning.
-            uintptr_t num_registered;
+            uintptr_t num_registered = 0;
         };
 
         /// Register an AOB to be scanned once all components are loaded or after a set delay (100ms). This allows the
@@ -207,25 +201,28 @@ namespace MCF
     /// RAII object representing a pointer to an object in memory found through AOB scanning.
     /// \tparam TAddress The underlying address type. Can be an integral or pointer type.
     /// \tparam DebugName Optional compile-time debug name which will be used to identify the AOB in warnings when not found / duplicated.
-    template<class TAddress, FixedString DebugName = "Unnamed"> requires (sizeof(TAddress) == sizeof(void*)) ||
-        (std::is_pointer_v<TAddress> || std::is_integral_v<TAddress>)
+    /// \tparam OnEvent Event on which to trigger the AOB scan. Defaults to ComponentMan::LoadCompleteEvent.
+    template<class TAddress, FixedString DebugName = "Unnamed", class OnEvent = ComponentMan::LoadCompleteEvent>
+        requires (sizeof(TAddress) == sizeof(void*))
+            && (std::is_pointer_v<TAddress> || std::is_integral_v<TAddress>)
+            && std::is_base_of_v<EventData, OnEvent>
     class AobScannedPtr : private NonAssignable
     {
     private:
         Dependency<AobScanner> aobScanMan;
 
-        CallResult<AobScanResult> cr_scan_result = [this](AobScanResult* scan_result) {
+        CallResult<AobScanResult> cr_scan_result = [this](const AobScanResult* scan_result) {
             Dependency<Logger> logger;
-            if (scan_result->num_results > 1) {
-                if (logger) logger->Warn("AutoUniqueAob", "Duplicate results for AOB \"{}\"", DebugName.buf);
+            if (scan_result->NumResults() > 1) {
+                if (logger) logger->Warn("AobScannedPtr", "Duplicate results for AOB \"{}\"", DebugName.buf);
             }
-            if (scan_result->num_results == 0) {
-                if (logger) logger->Warn("AutoUniqueAob", "AOB \"{}\" not found", DebugName.buf);
+            if (scan_result->NumResults() == 0) {
+                if (logger) logger->Warn("AobScannedPtr", "AOB \"{}\" not found", DebugName.buf);
             }
             else {
                 found = true;
-                unique = scan_result->num_results == 1;
-                addr = (TAddress)scan_result->addresses[0];
+                unique = scan_result->NumResults() == 1;
+                addr = (TAddress)scan_result->Addresses()[0];
             }
         };
 
@@ -235,12 +232,13 @@ namespace MCF
         bool found = false;
         bool unique = false;
 
-        explicit AobScannedPtr(const AOB& aob) : aob(aob)
+        AobScannedPtr(const AOB& aob) : aob(aob)
         {
-            if (aobScanMan) aobScanMan->RegisterAob(aob, &cr_scan_result);
+            if (aobScanMan && !aobScanMan->RegisterAob(aob, &cr_scan_result)) {
+                Dependency<Logger> logger;
+                if (logger) logger->Warn("AobScannedPtr", "Failed to register AOB \"{}\"", DebugName.buf);
+            }
         }
-
-        AobScannedPtr(AobScanResult const&) = delete;
 
         TAddress operator->() {
             return addr;
@@ -252,15 +250,17 @@ namespace MCF
     /// Wrapper around AobScannedPtr for a function pointer that can be called directly.
     /// \tparam TFun The function type. Must be a function pointer. Pass void(__stdcall *)(int), not void __stdcall(int)
     /// \tparam DebugName Optional compile-time debug name which will be used to identify the AOB in warnings when not found / duplicated.
-    template<class TFun, FixedString DebugName = "Unnamed"> requires std::is_function_v<TFun>
+    template<class TFun, FixedString DebugName = "Unnamed", class OnEvent = ComponentMan::LoadCompleteEvent>
+        requires std::is_function_v<TFun> &&  std::is_base_of_v<EventData, OnEvent>
     class AobScannedFunction;
 
 #ifndef _WIN64
-    template<FixedString DebugName, class Ret, class... Args>
-    class AobScannedFunction<Ret (__stdcall*)(Args...), DebugName> : public AobScannedPtr<Ret(__stdcall*)(Args...), DebugName>
+    template<FixedString DebugName, class OnEvent, class Ret, class... Args>
+    class AobScannedFunction<Ret (__stdcall*)(Args...), DebugName, OnEvent> :
+            public AobScannedPtr<Ret(__stdcall*)(Args...), DebugName, OnEvent>
     {
     public:
-        AobScannedFunction(const AOB& aob) : AobScannedPtr<__stdcall Ret (*)(Args...), DebugName>(aob) { }
+        AobScannedFunction(const AOB& aob) : AobScannedPtr<Ret (__stdcall *)(Args...), DebugName, OnEvent>(aob) { }
 
         Ret operator()(Args... args)
         {
@@ -268,11 +268,12 @@ namespace MCF
             else return this->addr(args...);
         }
     };
-    template<FixedString DebugName, class Ret, class... Args>
-    class AobScannedFunction<Ret (__cdecl*)(Args...), DebugName> : public AobScannedPtr<Ret(__cdecl*)(Args...), DebugName>
+    template<FixedString DebugName, class OnEvent, class Ret, class... Args>
+    class AobScannedFunction<Ret (__cdecl*)(Args...), DebugName, OnEvent> :
+            public AobScannedPtr<Ret(__cdecl*)(Args...), DebugName, OnEvent>
     {
     public:
-        AobScannedFunction(const AOB& aob) : AobScannedPtr<__cdecl Ret (*)(Args...), DebugName>(aob) { }
+        AobScannedFunction(const AOB& aob) : AobScannedPtr<Ret (__cdecl *)(Args...), DebugName, OnEvent>(aob) { }
 
         Ret operator()(Args... args)
         {
@@ -280,11 +281,12 @@ namespace MCF
             else return this->addr(args...);
         }
     };
-    template<FixedString DebugName, class Ret, class... Args>
-    class AobScannedFunction<Ret (__thiscall*)(Args...), DebugName> : public AobScannedPtr<Ret(__thiscall*)(Args...), DebugName>
+    template<FixedString DebugName, class OnEvent, class Ret, class... Args>
+    class AobScannedFunction<Ret (__thiscall*)(Args...), DebugName, OnEvent> :
+            public AobScannedPtr<Ret(__thiscall*)(Args...), DebugName, OnEvent>
     {
     public:
-        AobScannedFunction(const AOB& aob) : AobScannedPtr<__thiscall Ret (*)(Args...), DebugName>(aob) { }
+        AobScannedFunction(const AOB& aob) : AobScannedPtr<Ret (__thiscall *)(Args...), DebugName, OnEvent>(aob) { }
 
         Ret operator()(Args... args)
         {
@@ -294,11 +296,12 @@ namespace MCF
     };
 #endif
 
-    template<FixedString DebugName, class Ret, class... Args>
-    class AobScannedFunction<Ret (__fastcall*)(Args...), DebugName> : public AobScannedPtr<Ret(__fastcall*)(Args...), DebugName>
+    template<FixedString DebugName, class OnEvent, class Ret, class... Args>
+    class AobScannedFunction<Ret (__fastcall*)(Args...), DebugName, OnEvent> :
+            public AobScannedPtr<Ret(__fastcall*)(Args...), DebugName, OnEvent>
     {
     public:
-        explicit AobScannedFunction(const AOB& aob) : AobScannedPtr<__fastcall Ret (*)(Args...), DebugName>(aob) { }
+        AobScannedFunction(const AOB& aob) : AobScannedPtr<Ret (__fastcall *)(Args...), DebugName, OnEvent>(aob) { }
 
         Ret operator()(Args... args)
         {
@@ -306,4 +309,4 @@ namespace MCF
             else return this->addr(args...);
         }
     };
-};
+} // MCF

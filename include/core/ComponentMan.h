@@ -33,18 +33,27 @@ namespace MCF
         };
 
         /// Event raised when a batch component load has begun.
-        struct LoadBeginEvent : public Event<"MCF_CM_LOAD_BEGIN_EVENT">
+        struct LoadBeginEvent : public Event<LoadBeginEvent, "MCF_CM_LOAD_BEGIN_EVENT">
         {
-            const ComponentFactory** to_load;
-            size_t count;
+        private:
+            friend class ComponentManImp;
+            std::vector<const ComponentFactory*> components;
+        public:
+            virtual const ComponentFactory* const* Components() const { return components.data(); }
+            virtual size_t Count() const { return components.size(); }
         };
 
         /// Event raised when a batch component load has completed.
-        struct LoadCompleteEvent : public Event<"MCF_CM_LOAD_COMPLETE_EVENT">
+        struct LoadCompleteEvent : public Event<LoadCompleteEvent, "MCF_CM_LOAD_COMPLETE_EVENT">
         {
-            const ComponentFactory** batch;
-            const LoadResult* results;
-            size_t count;
+        private:
+            friend class ComponentManImp;
+            std::vector<const ComponentFactory*> batch;
+            std::vector<LoadResult> results;
+        public:
+            virtual const ComponentFactory* const* Batch() const { return batch.data(); }
+            virtual const LoadResult* Results() const { return results.data(); }
+            virtual size_t Count() const { return batch.size(); }
         };
 
         enum class UnloadResult : int32_t
@@ -62,19 +71,29 @@ namespace MCF
         };
 
         /// Event raised when an unload operation has begun.
-        struct UnloadBeginEvent : public Event<"MCF_CM_UNLOAD_BEGIN_EVENT">
+        struct UnloadBeginEvent : public Event<UnloadBeginEvent, "MCF_CM_UNLOAD_BEGIN_EVENT">
         {
-            const char** version_strings;
-            size_t count;
+        private:
+            friend class ComponentManImp;
+            std::vector<const ComponentFactory*> components;
             bool unload_deps;
+        public:
+            virtual const ComponentFactory* const* Components() const { return components.data(); }
+            virtual size_t Count() const { return components.size(); }
+            virtual bool DoUnloadDeps() const { return unload_deps; }
         };
 
         /// Event raised when an unload operation has completed.
-        struct UnloadCompleteEvent : public Event<"MCF_CM_UNLOAD_BEGIN_EVENT">
+        struct UnloadCompleteEvent : public Event<UnloadCompleteEvent, "MCF_CM_UNLOAD_BEGIN_EVENT">
         {
-            const char** version_strings;
-            UnloadResult* results;
-            size_t count;
+        private:
+            friend class ComponentManImp;
+            std::vector<const ComponentFactory*> batch;
+            std::vector<LoadResult> results;
+        public:
+            virtual const ComponentFactory* const* Batch() const { return batch.data(); }
+            virtual const LoadResult* Results() const { return results.data(); }
+            virtual size_t Count() const { return batch.size(); }
         };
 
         /// Get the instance of a particular component by its unique version string.

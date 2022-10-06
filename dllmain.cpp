@@ -9,6 +9,8 @@
 #include "include/windows_include.h"
 #include <winternl.h>
 #include "src/core/Bootstrap.h"
+#include "src/steamstub/SteamStubHeader.hpp"
+#include "src/memory/VirtualAllocNear.hpp"
 
 typedef NTSTATUS (NTAPI *pNtGetNextThread)(
          HANDLE ProcessHandle,
@@ -77,8 +79,43 @@ BOOL hijackSuspendedMainThread(void* hook, uintptr_t (**originalEntryPoint)())
 }
 
 static uintptr_t(*originalEntryPoint)();
+
+//static uint8_t* steamStubEntryPointThunk;
+//static void* steamStubThunkMem;
+//
+//uintptr_t __stdcall steamStubEntryPoint()
+//{
+//    MCF::Bootstrap::Get().Init(false);
+//    return originalEntryPoint();
+//}
+
 uintptr_t __stdcall myEntryPoint()
 {
+//    // TODO: Proper "run after Steam sub" functionality
+//    // Let SteamSub 3.1 run before our bootstrap code
+//
+//    auto header = (MCF::SteamStubHeader31*)((intptr_t)originalEntryPoint - 0xF0);
+//    auto sig = header->xor_key ^ header->signature;
+//
+//    // Steam Stub header detected
+//    if (sig == 0xC0DEC0DF) {
+//        auto steamEntry = originalEntryPoint;
+//        // Patch header in place
+//        DWORD oldProtect;
+//        VirtualProtectEx(GetCurrentProcess(), header, 0xF0, PAGE_EXECUTE_READWRITE, &oldProtect);
+//
+//        MCF::SteamXorDecrypt(header, header, 0xF0);
+//
+//        originalEntryPoint = (uintptr_t(*)())((intptr_t)MCF::MainModule().begin + header->original_entry_point);
+//        // Steam detects this :(
+//        //header->original_entry_point = (intptr_t)steamStubEntryPoint - (intptr_t)MCF::MainModule().begin;
+//        MCF::SteamXorEncrypt(header, header, 0xF0);
+//
+//        VirtualProtectEx(GetCurrentProcess(), header, 0xF0, oldProtect, &oldProtect);
+//
+//        return steamEntry();
+//    }
+
     MCF::Bootstrap::Get().Init(true);
     return originalEntryPoint();
 }

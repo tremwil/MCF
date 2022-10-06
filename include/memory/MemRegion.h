@@ -11,6 +11,7 @@
 #include <cstdint>
 #include "include/windows_include.h"
 #include <psapi.h>
+#include <algorithm>
 
 namespace MCF
 {
@@ -76,8 +77,8 @@ namespace MCF
             for (int i = 0; i < nt_header->FileHeader.NumberOfSections; i++) {
                 auto section = sections + i;
                 if (strcmp(reinterpret_cast<const char*>(section->Name), pe_section) == 0) {
-                    if constexpr(sizeof(void*) == 4) begin = section->VirtualAddress;
-                    else begin = base + section->VirtualAddress;
+                    //if constexpr(sizeof(void*) == 4) begin = section->VirtualAddress;
+                    begin = base + section->VirtualAddress;
                     end = begin + section->Misc.VirtualSize;
                     module_base = base;
                     return;
@@ -133,35 +134,35 @@ namespace MCF
     };
 
     /// Get a memory region that encompasses the entire process's address space.
-    const MemRegion& EntireAddressSpace()
+    inline const MemRegion& EntireAddressSpace()
     {
         static MemRegion all(0, INTPTR_MAX, 0);
         return all;
     }
 
     /// Get the memory region corresponding to the main module of this process.
-    const MemRegion& MainModule()
+    inline const MemRegion& MainModule()
     {
         static MemRegion main(nullptr);
         return main;
     }
 
     /// Get the memory region corresponding to the main module's .text (code) section.
-    const MemRegion& MainModuleText()
+    inline const MemRegion& MainModuleText()
     {
         static MemRegion main_text(nullptr, ".text");
         return main_text;
     }
 
     /// Get the memory region corresponding to the main module's .rdata (read-only initialized data, e.g. RTTI) section.
-    const MemRegion& MainModuleRdata()
+    inline const MemRegion& MainModuleRdata()
     {
         static MemRegion main_rdata(nullptr, ".rdata");
         return main_rdata;
     }
 
     /// Get the memory region corresponding to the main module's .data (static uninitialized data) section.
-    const MemRegion& MainModuleData()
+    inline const MemRegion& MainModuleData()
     {
         static MemRegion main_data(nullptr, ".data");
         return main_data;

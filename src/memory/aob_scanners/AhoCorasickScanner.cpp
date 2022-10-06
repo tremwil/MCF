@@ -13,12 +13,10 @@
 
 namespace MCF
 {
-    void AhoCorasickScanner::BuildStateMachine(const std::vector<std::string> &kw)
+    void AhoCorasickScanner::BuildStateMachine()
     {
         // Implementation based on https://www.geeksforgeeks.org/aho-corasick-algorithm-pattern-searching/
         // Adapted for arbitrary keyword count and byte string searching
-
-        keywords = kw; // Copy keywords over
 
         num_states = 0;
         max_states = 0; // Maximum amount of states the algorithm could require
@@ -47,7 +45,7 @@ namespace MCF
                 if (transition_fun[idx] == -1)
                     transition_fun[idx] = num_states++;
 
-                curr_state = transition_fun[curr_state];
+                curr_state = transition_fun[idx];
             }
 
             // Add word to output function for given state
@@ -94,25 +92,6 @@ namespace MCF
         for (int i = 0; i < num_states; i++) {
             for (auto out : temp_output[i])
                 output_fun[i].push_back(out);
-        }
-    }
-
-    template<class TCallback>
-    requires std::is_invocable_r_v<bool, TCallback, int, uintptr_t>
-    void AhoCorasickScanner::Search(const uint8_t* memory, size_t size, const TCallback &callback) const
-    {
-        int state = 0;
-        for (int i = 0; i < size; i++) {
-            uint8_t c = memory[i];
-
-            // Navigate to next state, taking failure function if necessary
-            while (transition_fun[256 * state + c] == -1) state = failure_fun[state];
-            state = transition_fun[256 * state + c];
-
-            for (const int out : output_fun[state]) {
-                if (callback(out, reinterpret_cast<uintptr_t>(memory + i)))
-                    return;
-            }
         }
     }
 } // MCF

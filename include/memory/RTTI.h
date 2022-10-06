@@ -9,9 +9,10 @@
 
 #pragma once
 #include <string>
-#include <dbghelp.h>
 
 #include "include/windows_include.h"
+#include <dbghelp.h>
+
 #include "core/SharedInterface.h"
 #include "MemRegion.h"
 

@@ -8,7 +8,7 @@
  */
 
 #pragma once
-#include <include/third-party/windows_include.h>
+#include <windows.h>
 #include <filesystem>
 #include <iostream>
 #include "ValveFileVDF/vdf_parser.hpp"

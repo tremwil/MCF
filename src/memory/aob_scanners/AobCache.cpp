@@ -7,4 +7,8 @@
  * If not, see <https://opensource.org/licenses/MIT>.
  */
 
-#include "BasicScanner.h"
+#include "AobCache.h"
+
+namespace MCF
+{
+} // MCF
